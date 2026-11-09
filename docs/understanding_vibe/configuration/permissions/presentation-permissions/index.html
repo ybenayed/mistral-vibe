@@ -177,14 +177,19 @@
             overflow: hidden;
         }
 
-        .mermaid-full pre.mermaid {
+        .mermaid-full .mermaid {
             max-width: 100%;
             font-size: 16px;
         }
 
-        .mermaid { 
+        .mermaid {
             max-width: 100%;
             font-size: 16px;
+        }
+        
+        .mermaid svg {
+            max-width: 100%;
+            height: auto;
         }
 
         /* Scénarios */
@@ -367,7 +372,7 @@
             .mermaid-full {
                 padding: 15px;
             }
-            .mermaid-full pre.mermaid {
+            .mermaid-full .mermaid {
                 font-size: 14px;
             }
         }
@@ -458,23 +463,27 @@
                 
                 <!-- DIAGRAMME PLEINE LARGEUR -->
                 <div class="mermaid-full">
-                    <pre class="mermaid">%%{init: {'flowchart': {'nodeSpacing': 40, 'rankSpacing': 80}}}%%
-flowchart TB
-    A[Outil appelé] --> B{Permission globale?}
+                    <div class="mermaid">flowchart TB
+    A[Outil appelé] --> B{Permission configurée?}
     B -->|NEVER| C[Bloqué]
-    B -->|ALWAYS| D{Fichier sensible?}
-    B -->|ASK| E[Demander]
-    D -->|Oui| E
-    D -->|Non| F[OK]
-    E --> G[Utilisateur]
-    G -->|Allow| F
-    G -->|Deny| C
-    
+    B -->|ALWAYS| D{Dans workspace?}
+    B -->|ASK| E[Demander permission]
+    D -->|Non| E
+    D -->|Oui| F{Fichier sensible?}
+    F -->|Oui| E
+    F -->|Non| G{Dans denylist?}
+    G -->|Oui| E
+    G -->|Non| H{Dans allowlist?}
+    H -->|Oui| I[✓ OK]
+    H -->|Non| E
+    E --> J[(Utilisateur)]
+    J -->|Allow| I
+    J -->|Deny| C
     style C fill:#ff6b6b,stroke:#c91818,color:#fff
     style E fill:#ffd166,stroke:#c98400,color:#333
-    style F fill:#06d6a0,stroke:#048f68,color:#333</pre>
+    style I fill:#06d6a0,stroke:#048f68,color:#333</div>
                 </div>
-                <p style="text-align: center; margin-top: -15px; margin-bottom: 20px;"><em>Rouge = bloqué, Orange = demande, Vert = autorisé</em></p>
+                <p style="text-align: center; margin-top: -15px; margin-bottom: 20px;"><em>🔴 Rouge = bloqué, 🟡 Orange = demande, 🟢 Vert = autorisé</em></p>
                 <p><strong>Les scenarios ci-dessous</strong> illustrent chaque cas de figure du diagramme.</p>
 
                 <div class="scenario">
@@ -680,21 +689,36 @@ flowchart TB
     </div>
 
     <script>
-        // Initialiser Mermaid
-        mermaid.initialize({
-            startOnLoad: true,
+        // Configuration de Mermaid
+        const mermaidConfig = {
+            startOnLoad: false,
             securityLevel: 'loose',
-            theme: window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'default'
+            theme: window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'default',
+            flowchart: {
+                useMaxWidth: true,
+                nodeSpacing: 35,
+                rankSpacing: 70
+            }
+        };
+
+        // Initialiser après chargement de la page
+        document.addEventListener('DOMContentLoaded', function() {
+            mermaid.initialize(mermaidConfig);
+            mermaid.init(undefined, document.querySelectorAll('.mermaid'));
         });
 
         // Mettre à jour si le thème change
         window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e) {
-            mermaid.initialize({
-                startOnLoad: true,
-                securityLevel: 'loose',
-                theme: e.matches ? 'dark' : 'default'
-            });
+            mermaidConfig.theme = e.matches ? 'dark' : 'default';
+            mermaid.initialize(mermaidConfig);
+            setTimeout(() => {
+                mermaid.init(undefined, document.querySelectorAll('.mermaid'));
+            }, 100);
         });
+    </script>
+    <script>
+        // Gestion du sommaire actif
+        document.addEventListener('DOMContentLoaded', function() {
 
         // Gestion du sommaire actif
         document.addEventListener('DOMContentLoaded', function() {
