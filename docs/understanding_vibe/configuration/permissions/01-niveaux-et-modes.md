@@ -39,6 +39,56 @@ class ToolPermission(StrEnum):
 
 ---
 
+## Ordre de priorité des niveaux de permission
+
+**Important :** L'ordre de vérification des niveaux de permission est **fixe et non configurable** :
+
+1. **ALWAYS** - Vérifié en premier. Si configuré, l'outil est exécuté automatiquement (sauf si d'autres règles s'appliquent)
+2. **NEVER** - Vérifié ensuite. Si configuré, l'outil est **systématiquement bloqué**
+3. **ASK** - Vérifié en dernier. Si configuré, l'outil demande confirmation à l'utilisateur
+
+Cet ordre est implémenté dans le code via un `match` statement dans `vibe/core/agent_loop/_loop.py:L3043-3051` et ne peut pas être modifié via la configuration. **Une permission `NEVER` a toujours priorité absolue** et bloquera l'outil même si d'autres règles l'autoriseraient.
+
+---
+
+## Diagramme : Interaction NEVER, ALWAYS, Allowlist, Denylist
+
+```mermaid
+flowchart TD
+    A[Permission globale] --> B{NEVER?}
+    B -->|Oui| C[❌ BLOQUÉ]
+    B -->|Non| D{ALWAYS?}
+    D -->|Oui| E[Vérifier denylist]
+    D -->|Non| F[✓ ASK]
+    E -->|Dans denylist?| G[❌ BLOQUÉ]
+    E -->|Non| H[Vérifier allowlist]
+    H -->|Dans allowlist| I[✅ AUTORISÉ]
+    H -->|Non| F
+    F --> J[Demander à l'utilisateur]
+    J -->|Allow| I
+    J -->|Deny| C
+    
+    %% Exceptions qui bypassent ALWAYS
+    E -->|Fichier sensible?| K[⚠️ Demander]
+    E -->|Hors workspace?| K
+    K --> J
+    
+    style C fill:#ff6b6b,stroke:#c91818,color:#fff
+    style I fill:#06d6a0,stroke:#048f68,color:#333
+    style F fill:#ffd166,stroke:#c98400,color:#333
+    style J fill:#ffd166,stroke:#c98400,color:#333
+    style K fill:#ffd166,stroke:#c98400,color:#333
+    style G fill:#ff6b6b,stroke:#c91818,color:#fff
+```
+
+**Légende :**
+- 🔴 **BLOQUÉ** : Action interdite (NEVER ou denylist)
+- 🟢 **AUTORISÉ** : Action exécutée (ALWAYS + allowlist)
+- 🟡 **ASK/Demander** : Requiert validation utilisateur
+- ⚠️ **Exceptions** : Fichiers sensibles et accès hors workspace **forcent toujours une demande**, même avec ALWAYS
+
+---
+
 ## Modes de permission avancés
 
 ### Listes d'autorisation (Allowlist)

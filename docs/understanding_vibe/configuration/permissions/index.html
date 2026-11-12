@@ -164,11 +164,11 @@ flowchart TB
     AS -->|valide| BT
     AS -->|valide| MC
     AS -->|politique| CF
-    AL -->|exécute| BT
-    AL -->|exécute| MC
-    AL -->|écrit| SL
+    AL -->|execute| BT
+    AL -->|execute| MC
+    AL -->|ecrit| SL
     AL -->|utilise| PS
-    AS -->|gère| TF
+    AS -->|gere| TF
     CF -->|charge| TF
                         </pre>
                     </div>
@@ -267,27 +267,34 @@ flowchart TB
         }
 
         // Gestion du plein écran
-        let currentFullscreenIndex = 0;
-        
         function openFullscreenMermaid(button) {
             const container = button.closest('.mermaid-container');
-            const mermaidElement = container.querySelector('.mermaid');
+            const mermaidWrapper = container && container.querySelector('.mermaid-wrapper');
             const modal = document.getElementById('mermaidModal');
             const modalContent = document.getElementById('mermaidModalContent');
             
-            modalContent.innerHTML = '<div class="mermaid">' + mermaidElement.textContent + '</div>';
-            modal.classList.add('active');
-            
-            mermaid.initialize({
-                startOnLoad: false,
-                securityLevel: 'loose',
-                theme: window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'default'
-            });
-            mermaid.init(undefined, modalContent.querySelector('.mermaid'));
+            if (mermaidWrapper && modal && modalContent && typeof mermaid !== 'undefined') {
+                // Cloner tout le wrapper
+                const clone = mermaidWrapper.cloneNode(true);
+                // Supprimer le bouton Agrandir du clone
+                const btn = clone.querySelector('.mermaid-fullscreen-btn');
+                if (btn) btn.remove();
+                modalContent.innerHTML = '';
+                modalContent.appendChild(clone);
+                modal.classList.add('active');
+                
+                // Re-initialiser Mermaid sur la modal
+                mermaid.initialize({
+                    startOnLoad: true,
+                    securityLevel: 'loose',
+                    theme: window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'default'
+                });
+            }
         }
 
         function closeFullscreenMermaid() {
-            document.getElementById('mermaidModal').classList.remove('active');
+            const modal = document.getElementById('mermaidModal');
+            if (modal) modal.classList.remove('active');
         }
 
         // Fermer avec Échap

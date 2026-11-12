@@ -284,20 +284,20 @@
                 <div class="mermaid-wrapper">
                     <pre class="mermaid">
 graph TD
-    A[ADR 0004: Typed Permissioned Tools] -->|Définition du contrat| B[Agent Loop]
+    A[ADR 0004: Typed Permissioned Tools] -->|Definition du contrat| B[Agent Loop]
     A -->|Serveur autoritaire| C[App Server]
     A -->|Callbacks| D[UI Textual/ACP]
     A -->|Logging| E[Session Log]
 
-    C -->|Héritage| F[ADR 0009: App Server Boundary]
+    C -->|Heritage| F[ADR 0009: App Server Boundary]
     C -->|Configuration| G[ADR 0005: Layered Config]
     C -->|Backends| H[ADR 0011: Session Backends]
 
     A -->|Extensions| I[ADR 0007: MCP/Connectors]
     A -->|Core Engine| J[ADR 0002: Core Engine]
 
-    F -->|Sécurité| K[ADR 0015: TLS Trust]
-    F -->|Compatibilité| L[ADR 0014: Backend Contract]
+    F -->|Securite| K[ADR 0015: TLS Trust]
+    F -->|Compatibilite| L[ADR 0014: Backend Contract]
     F -->|Architecture| M[ADR 0001: Architecture Principles]
                     </pre>
                 </div>
@@ -365,23 +365,32 @@ graph TD
         // Gestion du plein écran
         function openFullscreenMermaid(button) {
             const container = button.closest('.mermaid-container');
-            const mermaidElement = container.querySelector('.mermaid');
+            const mermaidWrapper = container && container.querySelector('.mermaid-wrapper');
             const modal = document.getElementById('mermaidModal');
             const modalContent = document.getElementById('mermaidModalContent');
             
-            modalContent.innerHTML = '<div class="mermaid">' + mermaidElement.textContent + '</div>';
-            modal.classList.add('active');
-            
-            mermaid.initialize({
-                startOnLoad: false,
-                securityLevel: 'loose',
-                theme: window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'default'
-            });
-            mermaid.init(undefined, modalContent.querySelector('.mermaid'));
+            if (mermaidWrapper && modal && modalContent && typeof mermaid !== 'undefined') {
+                // Cloner tout le wrapper
+                const clone = mermaidWrapper.cloneNode(true);
+                // Supprimer le bouton Agrandir du clone
+                const btn = clone.querySelector('.mermaid-fullscreen-btn');
+                if (btn) btn.remove();
+                modalContent.innerHTML = '';
+                modalContent.appendChild(clone);
+                modal.classList.add('active');
+                
+                // Re-initialiser Mermaid sur la modal
+                mermaid.initialize({
+                    startOnLoad: true,
+                    securityLevel: 'loose',
+                    theme: window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'default'
+                });
+            }
         }
 
         function closeFullscreenMermaid() {
-            document.getElementById('mermaidModal').classList.remove('active');
+            const modal = document.getElementById('mermaidModal');
+            if (modal) modal.classList.remove('active');
         }
 
         // Fermer avec Échap

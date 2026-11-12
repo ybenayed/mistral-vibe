@@ -28,179 +28,236 @@
 
     <div class="page-container">
         <main class="main-content">
-        <h1>Niveaux et modes de permission</h1>
+            <h1>Niveaux et modes de permission</h1>
 
-        <section>
-            <h2>Niveaux de permission principaux</h2>
             <p>
                 Le système définit <strong>trois niveaux de permission fondamentaux</strong> pour chaque outil, 
                 représentés par l'énumération <code>ToolPermission</code> dans <code>vibe/core/tools/models.py:L12-20</code> :
             </p>
 
-            <pre><code>class ToolPermission(StrEnum):
+            <div class="code-container">
+                <pre><code class="language-python">class ToolPermission(StrEnum):
     ALWAYS = auto()    # Toujours autoriser
     NEVER = auto()     # Toujours refuser
-    ASK = auto()       # Demander à l'utilisateur
-</code></pre>
+    ASK = auto()       # Demander à l'utilisateur</code></pre>
+            </div>
 
-            <h3>ALWAYS (Toujours autoriser)</h3>
-            <ul>
-                <li><strong>Comportement</strong> : L'outil est exécuté automatiquement sans demande de confirmation</li>
-                <li><strong>Utilisation typique</strong> : Outils à faible risque (lecture de fichiers dans le workspace, commandes sans effet de bord)</li>
-                <li><strong>Configuration par défaut</strong> : Aucune par défaut dans le code source. Chaque outil définit sa propre permission par défaut dans sa <code>BaseToolConfig</code>.</li>
-                <li><strong>Risque</strong> : Une mauvaise configuration peut permettre des actions dangereuses sans validation</li>
-                <li><strong>Source</strong> : <code>vibe/core/tools/models.py:L12-20</code></li>
-            </ul>
+            <section id="niveaux-principaux">
+                <h2>Niveaux de permission principaux</h2>
 
-            <h3>NEVER (Toujours refuser)</h3>
-            <ul>
-                <li><strong>Comportement</strong> : L'outil est systématiquement bloqué, même si l'utilisateur le demande. Le flux est : <code>AgentLoop._should_execute_tool()</code> → détecte <code>ToolPermission.NEVER</code> → retourne <code>ToolDecision(verdict=SKIP, approval_source=NEVER)</code> → l'outil n'est pas exécuté</li>
-                <li><strong>Utilisation typique</strong> : Outils considérés comme trop dangereux pour un environnement donné</li>
-                <li><strong>Exemple</strong> : Un administrateur peut désactiver complètement <code>bash</code> en configurant <code>tools.bash.permission = "never"</code> dans <code>config.toml</code></li>
-                <li><strong>Sécurité</strong> : Garantit qu'une action ne sera jamais exécutée, même par erreur</li>
-                <li><strong>Source</strong> : <code>vibe/core/tools/models.py:L12-20</code>, <code>vibe/core/agent_loop/_loop.py:L3047-3051</code></li>
-            </ul>
+                <div class="card-grid">
+                    <div class="card">
+                        <h3>🟢 ALWAYS (Toujours autoriser)</h3>
+                        <p><strong>Comportement :</strong> L'outil est exécuté automatiquement sans demande de confirmation</p>
+                        <p><strong>Utilisation typique :</strong> Outils à faible risque (lecture de fichiers dans le workspace, commandes sans effet de bord)</p>
+                        <p><strong>Configuration par défaut :</strong> Aucune par défaut dans le code source. Chaque outil définit sa propre permission par défaut dans sa <code>BaseToolConfig</code>. Exemple : <code>read_file</code> n'a pas de permission par défaut explicite dans le code, elle dépend de la config.</p>
+                        <p><strong>Risque :</strong> Une mauvaise configuration peut permettre des actions dangereuses sans validation</p>
+                        <p class="source-ref">Source : <code>vibe/core/tools/models.py:L12-20</code></p>
+                    </div>
 
-            <h3>ASK (Demander à l'utilisateur)</h3>
-            <ul>
-                <li><strong>Comportement</strong> : L'exécution est suspendue et l'utilisateur doit explicitement approuver ou refuser. Le flux est : <code>AgentLoop._should_execute_tool()</code> → détecte <code>ToolPermission.ASK</code> avec des <code>required_permissions</code> non couvertes → appelle <code>_ask_approval()</code> → ouvre un callback UI → attend la réponse utilisateur</li>
-                <li><strong>Utilisation typique</strong> : Outils à risque modéré ou élevé (écriture de fichiers, commandes bash)</li>
-                <li><strong>Configuration par défaut</strong> : <code>bash</code> et <code>write_file</code> ont typiquement <code>ASK</code> comme permission par défaut dans la pratique</li>
-                <li><strong>Flexibilité</strong> : Permet un contrôle granulaire par appel</li>
-                <li><strong>Source</strong> : <code>vibe/core/tools/models.py:L12-20</code>, <code>vibe/core/agent_loop/_loop.py:L3053-3065</code></li>
-            </ul>
-        </section>
+                    <div class="card">
+                        <h3>🔴 NEVER (Toujours refuser)</h3>
+                        <p><strong>Comportement :</strong> L'outil est systématiquement bloqué, même si l'utilisateur le demande. Le flux est : <code>AgentLoop._should_execute_tool()</code> → détecte <code>ToolPermission.NEVER</code> → retourne <code>ToolDecision(verdict=SKIP, approval_source=NEVER)</code> → l'outil n'est pas exécuté</p>
+                        <p><strong>Utilisation typique :</strong> Outils considérés comme trop dangereux pour un environnement donné</p>
+                        <p><strong>Exemple :</strong> Un administrateur peut désactiver complètement <code>bash</code> en configurant <code>tools.bash.permission = "never"</code> dans <code>config.toml</code></p>
+                        <p><strong>Sécurité :</strong> Garantit qu'une action ne sera jamais exécutée, même par erreur</p>
+                        <p class="source-ref">Source : <code>vibe/core/tools/models.py:L12-20</code>, <code>vibe/core/agent_loop/_loop.py:L3047-3051</code></p>
+                    </div>
 
-        <section>
-            <h2>Modes de permission avancés</h2>
+                    <div class="card">
+                        <h3>❓ ASK (Demander à l'utilisateur)</h3>
+                        <p><strong>Comportement :</strong> L'exécution est suspendue et l'utilisateur doit explicitement approuver ou refuser. Le flux est : <code>AgentLoop._should_execute_tool()</code> → détecte <code>ToolPermission.ASK</code> avec des <code>required_permissions</code> non couvertes → appelle <code>_ask_approval()</code> → ouvre un callback UI → attend la réponse utilisateur</p>
+                        <p><strong>Utilisation typique :</strong> Outils à risque modéré ou élevé (écriture de fichiers, commandes bash)</p>
+                        <p><strong>Configuration par défaut :</strong> <code>bash</code> et <code>write_file</code> ont typiquement <code>ASK</code> comme permission par défaut dans la pratique</p>
+                        <p><strong>Flexibilité :</strong> Permet un contrôle granulaire par appel</p>
+                        <p class="source-ref">Source : <code>vibe/core/tools/models.py:L12-20</code>, <code>vibe/core/agent_loop/_loop.py:L3053-3065</code></p>
+                    </div>
+                </div>
+            </section>
 
-            <h3>Listes d'autorisation (Allowlist)</h3>
-            <ul>
-                <li><strong>Fonctionnement</strong> : Liste de motifs (patterns) qui, lorsqu'ils correspondent à une requête, permettent l'exécution automatique</li>
-                <li><strong>Format</strong> : Chaînes de caractères utilisant des wildcards. Les motifs sont comparés via <code>resolve_path_permission()</code> dans <code>vibe/core/tools/utils.py</code></li>
-                <li><strong>Exemples par défaut pour bash</strong> (définis dans <code>vibe/core/tools/builtins/bash.py:L80-95</code>) :
-                    <pre><code>[
-    "cd", "echo", "git diff", "git log", "git status", 
-    "tree", "whoami", "basename", "cat", "comm", "cut", 
-    "date", "diff", "head", "join", "less", "nl", 
-    "od", "paste", "pr", "sort", "split", "tail", 
-    "tac", "tee", "tr", "unexpand", "uniq", "wc"
-]
-</code></pre>
-                </li>
-                <li><strong>Comportement</strong> : Si une commande correspond à un motif de l'allowlist ET qu'aucun motif de denylist ne correspond → l'exécution est autorisée sans demande</li>
-                <li><strong>Source</strong> : <code>vibe/core/tools/builtins/bash.py:L80-95</code>, <code>vibe/core/tools/utils.py:L183-249</code></li>
-            </ul>
+            <section id="ordre-priorite">
+                <h2>Ordre de priorité des niveaux de permission</h2>
 
-            <h3>Listes de refus (Denylist)</h3>
-            <ul>
-                <li><strong>Fonctionnement</strong> : Liste de motifs qui, lorsqu'ils correspondent à une requête, bloquent systématiquement l'exécution</li>
-                <li><strong>Priorité</strong> : La denylist a une priorité plus élevée que l'allowlist. Dans <code>bash.py:L690-705</code>, les chemins en dehors du workspace sont filtrés par la denylist avant toute autre vérification</li>
-                <li><strong>Exemples par défaut pour bash</strong> (définis dans <code>vibe/core/tools/builtins/bash.py:L98-110</code>) :
-                    <pre><code>[
-    "gdb", "pdb", "passwd",
-    "nano", "vim", "vi", "emacs", "bash -i", "sh -i", 
-    "zsh -i", "fish -i", "screen", "tmux",
-    "cmd /k", "powershell -NoExit", "pwsh -NoExit", "notepad"
-]
-</code></pre>
-                </li>
-                <li><strong>Sécurité</strong> : Fournit une protection contre les commandes explicitement dangereuses</li>
-                <li><strong>Source</strong> : <code>vibe/core/tools/builtins/bash.py:L98-110</code></li>
-            </ul>
+                <div class="callout note">
+                    <p><strong>⚠️ Important :</strong> L'ordre de vérification des niveaux de permission est <strong>fixe et non configurable</strong> :</p>
+                    <ol>
+                        <li><strong>ALWAYS</strong> - Vérifié en premier. Si configuré, l'outil est exécuté automatiquement (sauf si d'autres règles s'appliquent)</li>
+                        <li><strong>NEVER</strong> - Vérifié ensuite. Si configuré, l'outil est <strong>systématiquement bloqué</strong></li>
+                        <li><strong>ASK</strong> - Vérifié en dernier. Si configuré, l'outil demande confirmation à l'utilisateur</li>
+                    </ol>
+                    <p>Cet ordre est implémenté dans le code via un <code>match</code> statement dans <code>vibe/core/agent_loop/_loop.py:L3043-3051</code> et ne peut pas être modifié via la configuration. <strong>Une permission <code>NEVER</code> a toujours priorité absolue</strong> et bloquera l'outil même si d'autres règles l'autoriseraient.</p>
+                </div>
+            </section>
 
-            <h3>Motifs sensibles (Sensitive Patterns)</h3>
-            <ul>
-                <li><strong>Fonctionnement</strong> : Liste de motifs qui déclenchent <strong>obligatoirement</strong> une demande de confirmation (<code>ToolPermission.ASK</code>), même si la permission globale de l'outil est <code>ALWAYS</code></li>
-                <li><strong>Exemples par défaut</strong> :
+            <section id="diagramme-scenarios">
+                <h2>Diagramme des Scénarios (Ordre de vérification)</h2>
+                <div class="mermaid-container">
+                    <div class="mermaid-wrapper">
+                        <pre class="mermaid">flowchart TD
+    START([Start]) --> TOOL[Outil appelle: bash, read_file, write_file]
+    TOOL --> PERM{Permission configuree?}
+    PERM -->|NEVER| BLOCK1[BLOQUE: Tool is permanently disabled]
+    PERM -->|ALWAYS| CHECKS[Verifications contextuelles]
+    PERM -->|ASK| ASK_DEFAULT[Demander permission]
+    CHECKS --> DENY{Dans denylist?}
+    DENY -->|Oui| BLOCK2[BLOQUE: Commande interdite]
+    DENY -->|Non| SENSITIVE{Fichier sensible?}
+    SENSITIVE -->|Oui| ASK_SENSITIVE[DEMANDER: .env, .ssh...]
+    SENSITIVE -->|Non| WORKSPACE{Hors workspace?}
+    WORKSPACE -->|Oui| ASK_WORKSPACE[DEMANDER: Acces exterieur]
+    WORKSPACE -->|Non| ALLOW{Dans allowlist?}
+    ALLOW -->|Oui| EXEC[AUTORISE: Sans demande]
+    ALLOW -->|Non| ASK_DEFAULT
+    ASK_SENSITIVE --> USER[Decision utilisateur]
+    ASK_WORKSPACE --> USER
+    ASK_DEFAULT --> USER
+    USER -->|Allow| EXEC
+    USER -->|Deny| BLOCK3[BLOQUE: Refuse par utilisateur]
+    BLOCK1 ~~~ BLOCK2 ~~~ BLOCK3 ~~~ BLOCKED[ECHEC: L outil n est pas execute]
+    EXEC ~~~ SUCCESS[SUCCES: L outil est execute]
+
+    %% Styling
+    style START fill:#0d6efd,stroke:#0056b3,color:#fff,shape:stadium
+    style TOOL fill:#e7f3ff,stroke:#0d6efd,color:#0d6efd
+    style PERM fill:#e7f3ff,stroke:#0d6efd,color:#0d6efd,diameter:1
+    style CHECKS fill:#e7f3ff,stroke:#0d6efd,color:#0d6efd
+    style DENY fill:#fff4e6,stroke:#ffc107,color:#856404,diameter:1
+    style SENSITIVE fill:#fff4e6,stroke:#ffc107,color:#856404,diameter:1
+    style WORKSPACE fill:#fff4e6,stroke:#ffc107,color:#856404,diameter:1
+    style ALLOW fill:#fff4e6,stroke:#ffc107,color:#856404,diameter:1
+    style USER fill:#d4edda,stroke:#28a745,color:#155724,shape:stadium
+    
+    style BLOCK1 fill:#fff5f5,stroke:#dc3545,color:#721c24
+    style BLOCK2 fill:#fff5f5,stroke:#dc3545,color:#721c24
+    style BLOCK3 fill:#fff5f5,stroke:#dc3545,color:#721c24
+    style EXEC fill:#d4edda,stroke:#28a745,color:#155724
+    style BLOCKED fill:#f8d7da,stroke:#dc3545,color:#721c24,shape:doublecircle
+    style SUCCESS fill:#d4edda,stroke:#28a745,color:#155724,shape:doublecircle
+    
+    style ASK_SENSITIVE fill:#fff3cd,stroke:#ffc107,color:#856404
+    style ASK_WORKSPACE fill:#fff3cd,stroke:#ffc107,color:#856404
+    style ASK_DEFAULT fill:#fff3cd,stroke:#ffc107,color:#856404</pre>
+                    </div>
+                    <figcaption>
+                        <strong>Diagramme complet des scénarios de permission</strong> - Tous les chemins possibles du flux de décision.
+                    </figcaption>
+                    <button class="mermaid-fullscreen-btn" onclick="openFullscreenMermaid(this)">Agrandir</button>
+                </div>
+            </section>
+
+            <section id="modes-avances">
+                <h2>Modes de permission avancés</h2>
+
+                <div class="card">
+                    <h3>📋 Listes d'autorisation (Allowlist)</h3>
+                    <p><strong>Fonctionnement :</strong> Liste de motifs (patterns) qui, lorsqu'ils correspondent à une requête, permettent l'exécution automatique</p>
+                    <p><strong>Format :</strong> Chaînes de caractères utilisant des wildcards. Les motifs sont comparés via <code>resolve_path_permission()</code> dans <code>vibe/core/tools/utils.py</code></p>
+                    <p><strong>Exemples par défaut pour bash</strong> (définis dans <code>vibe/core/tools/builtins/bash.py:L80-95</code>) :</p>
+                    <pre><code class="language-python">["cd", "echo", "git diff", "git log", "git status", "tree", "whoami"]
++ ["basename", "cat", "comm", "cut", "date", "diff", ...]</code></pre>
+                    <p><strong>Comportement :</strong> Si une commande correspond à un motif de l'allowlist ET qu'aucun motif de denylist ne correspond → l'exécution est autorisée sans demande</p>
+                    <p class="source-ref">Source : <code>vibe/core/tools/builtins/bash.py:L80-95</code>, <code>vibe/core/tools/utils.py:L183-249</code></p>
+                </div>
+
+                <div class="card">
+                    <h3>🚫 Listes de refus (Denylist)</h3>
+                    <p><strong>Fonctionnement :</strong> Liste de motifs qui, lorsqu'ils correspondent à une requête, bloquent systématiquement l'exécution</p>
+                    <p><strong>Priorité :</strong> La denylist a une priorité plus élevée que l'allowlist. Dans <code>bash.py:L690-705</code>, les chemins en dehors du workspace sont filtrés par la denylist avant toute autre vérification</p>
+                    <p><strong>Exemples par défaut pour bash</strong> (définis dans <code>vibe/core/tools/builtins/bash.py:L98-110</code>) :</p>
+                    <pre><code class="language-python">["gdb", "pdb", "passwd"]
++ ["nano", "vim", "vi", "emacs", "bash -i", "sh -i", "zsh -i", "fish -i", "screen", "tmux"]
++ ["cmd /k", "powershell -NoExit", "pwsh -NoExit", "notepad"]</code></pre>
+                    <p><strong>Sécurité :</strong> Fournit une protection contre les commandes explicitement dangereuses</p>
+                    <p class="source-ref">Source : <code>vibe/core/tools/builtins/bash.py:L98-110</code></p>
+                </div>
+
+                <div class="card">
+                    <h3>🔒 Motifs sensibles (Sensitive Patterns)</h3>
+                    <p><strong>Fonctionnement :</strong> Liste de motifs qui déclenchent <strong>obligatoirement</strong> une demande de confirmation (<code>ToolPermission.ASK</code>), même si la permission globale de l'outil est <code>ALWAYS</code></p>
+                    <p><strong>Exemples par défaut :</strong></p>
                     <ul>
                         <li>Pour les fichiers : Définis dans la config de chaque outil. Dans <code>vibe/core/tools/utils.py:L210-218</code>, si un fichier correspond à un motif sensible → <code>RequiredPermission(scope=FILE_PATTERN)</code> est ajouté</li>
                         <li>Pour bash : Le motif <code>sudo</code> est traité spécialement dans <code>bash.py</code></li>
                     </ul>
-                </li>
-                <li><strong>Objectif</strong> : Protéger les fichiers contenant des secrets ou des informations sensibles</li>
-                <li><strong>Source</strong> : <code>vibe/core/tools/utils.py:L210-218</code></li>
-            </ul>
+                    <p><strong>Objectif :</strong> Protéger les fichiers contenant des secrets ou des informations sensibles</p>
+                    <p class="source-ref">Source : <code>vibe/core/tools/utils.py:L210-218</code></p>
+                </div>
+            </section>
 
-            <h3>Portées de permission (PermissionScope)</h3>
-            <p>
-                Le système définit plusieurs <strong>portées</strong> pour les permissions, représentées par <code>PermissionScope</code> dans <code>vibe/permissions.py:L18-24</code> :
-            </p>
-            <pre><code>class PermissionScope(StrEnum):
+            <section id="portées">
+                <h2>Portées de permission</h2>
+
+                <p>Le système définit plusieurs <strong>portées</strong> pour les permissions, représentées par <code>PermissionScope</code> dans <code>vibe/permissions.py:L18-24</code> :</p>
+
+                <div class="code-container">
+                    <pre><code class="language-python">class PermissionScope(StrEnum):
     COMMAND_PATTERN = auto()      # Motif de commande
     OUTSIDE_DIRECTORY = auto()    # Accès en dehors du workspace
     FILE_PATTERN = auto()         # Motif de fichier
-    URL_PATTERN = auto()          # Motif d'URL
-</code></pre>
-            <p>
-                Ces portées permettent de <strong>scoper</strong> finement les permissions accordées :
-            </p>
-            <ul>
-                <li><strong>COMMAND_PATTERN</strong> : Autorise une commande spécifique ou un motif de commande. Utilisé dans <code>bash.py</code> pour les commandes allowlistées/denylistées</li>
-                <li><strong>OUTSIDE_DIRECTORY</strong> : Autorise l'accès à un chemin spécifique en dehors du workspace. Utilisé dans <code>utils.py:L225-238</code> pour les fichiers hors workspace</li>
-                <li><strong>FILE_PATTERN</strong> : Autorise l'accès à un fichier ou un motif de fichier spécifique. Utilisé dans <code>utils.py:L210-218</code> pour les fichiers sensibles</li>
-                <li><strong>URL_PATTERN</strong> : Autorise l'accès à une URL ou un motif d'URL spécifique. Utilisé dans <code>web_fetch.py:L113-130</code></li>
-            </ul>
-            <p><strong>Source</strong> : <code>vibe/permissions.py:L18-24</code></p>
+    URL_PATTERN = auto()          # Motif d'URL</code></pre>
+                </div>
 
-            <h3>Portées de grant de chemin (PathGrantScope)</h3>
-            <p>
-                Pour les permissions de type <code>OUTSIDE_DIRECTORY</code>, le système propose deux niveaux de granularité, définis dans <code>vibe/permissions.py:L10-14</code> :
-            </p>
-            <pre><code>class PathGrantScope(StrEnum):
+                <p><strong>Ces portées permettent de scoper finement les permissions accordées :</strong></p>
+                <ul>
+                    <li><strong>COMMAND_PATTERN</strong> : Autorise une commande spécifique ou un motif de commande. Utilisé dans <code>bash.py</code> pour les commandes allowlistées/denylistées</li>
+                    <li><strong>OUTSIDE_DIRECTORY</strong> : Autorise l'accès à un chemin spécifique en dehors du workspace. Utilisé dans <code>utils.py:L225-238</code> pour les fichiers hors workspace</li>
+                    <li><strong>FILE_PATTERN</strong> : Autorise l'accès à un fichier ou un motif de fichier spécifique. Utilisé dans <code>utils.py:L210-218</code> pour les fichiers sensibles</li>
+                    <li><strong>URL_PATTERN</strong> : Autorise l'accès à une URL ou un motif d'URL spécifique. Utilisé dans <code>web_fetch.py:L113-130</code></li>
+                </ul>
+                <p class="source-ref">Source : <code>vibe/permissions.py:L18-24</code></p>
+
+                <div class="callout note">
+                    <p><strong>Portées de grant de chemin (PathGrantScope)</strong></p>
+                    <p>Pour les permissions de type <code>OUTSIDE_DIRECTORY</code>, le système propose deux niveaux de granularité, définis dans <code>vibe/permissions.py:L10-14</code> :</p>
+                    <pre><code class="language-python">class PathGrantScope(StrEnum):
     EXACT = auto()                  # Chemin exact uniquement
-    DIRECTORY_RECURSIVE = auto()   # Chemin et tous ses sous-chemins
-</code></pre>
-            <ul>
-                <li><strong>EXACT</strong> : La permission s'applique uniquement au chemin exact spécifié. Utilisé dans <code>utils.py:L233</code> pour les fichiers individuels</li>
-                <li><strong>DIRECTORY_RECURSIVE</strong> : La permission s'applique au répertoire et à tous ses sous-répertoires et fichiers</li>
-            </ul>
-            <p><strong>Source</strong> : <code>vibe/permissions.py:L10-14</code>, <code>vibe/core/tools/utils.py:L233</code></p>
-        </section>
-
-        <section>
-            <h2>Stockage des permissions</h2>
-            <p>
-                Le système maintient deux types de stockage pour les permissions :
-            </p>
-
-            <h3>1. Permissions de session (<code>PermissionStore</code>)</h3>
-            <ul>
-                <li><strong>Implémentation</strong> : <code>vibe/core/tools/permissions.py:L16-56</code></li>
-                <li><strong>Stockage</strong> : En mémoire, valables pour la session courante uniquement</li>
-                <li><strong>Contenu</strong> :
+    DIRECTORY_RECURSIVE = auto()   # Chemin et tous ses sous-chemins</code></pre>
                     <ul>
-                        <li><code>_rules: list[ApprovedRule]</code> : Liste des règles de permission accordées pendant la session</li>
-                        <li><code>_tool_permissions: dict[str, ToolPermission]</code> : Dictionnaire des permissions globales par outil pour la session</li>
+                        <li><strong>EXACT</strong> : La permission s'applique uniquement au chemin exact spécifié. Utilisé dans <code>utils.py:L233</code> pour les fichiers individuels</li>
+                        <li><strong>DIRECTORY_RECURSIVE</strong> : La permission s'applique au répertoire et à tous ses sous-répertoires et fichiers</li>
                     </ul>
-                </li>
-                <li><strong>Méthodes clés</strong> :
-                    <ul>
-                        <li><code>covers(tool_name: str, rp: RequiredPermission) -> bool</code> : Vérifie si une permission requise est couverte par une règle existante</li>
-                        <li><code>add_rule(rule: ApprovedRule)</code> : Ajoute une règle de permission</li>
-                        <li><code>set_tool_permission(tool_name: str, permission: ToolPermission)</code> : Définit la permission globale pour un outil</li>
-                        <li><code>reset()</code> : Efface toutes les permissions de session (appelée entre les sessions)</li>
-                    </ul>
-                </li>
-            </ul>
+                    <p class="source-ref">Source : <code>vibe/permissions.py:L10-14</code>, <code>vibe/core/tools/utils.py:L233</code></p>
+                </div>
+            </section>
 
-            <h3>2. Permissions permanentes</h3>
-            <ul>
-                <li><strong>Stockage</strong> : Dans le fichier de configuration (<code>~/.vibe/config.toml</code> ou <code>.vibe/config.toml</code> du projet)</li>
-                <li><strong>Format</strong> : TOML, dans la section <code>[tools.{nom_outil}]</code></li>
-                <li><strong>Exemple</strong> :
-                    <pre><code>[tools.bash]
+            <section id="stockage">
+                <h2>Stockage des permissions</h2>
+
+                <p>Le système maintient deux types de stockage pour les permissions :</p>
+
+                <div class="card-grid">
+                    <div class="card">
+                        <h3>💾 1. Permissions de session (<code>PermissionStore</code>)</h3>
+                        <p><strong>Implémentation :</strong> <code>vibe/core/tools/permissions.py:L16-56</code></p>
+                        <p><strong>Stockage :</strong> En mémoire, valables pour la session courante uniquement</p>
+                        <p><strong>Contenu :</strong></p>
+                        <ul>
+                            <li><code>_rules: list[ApprovedRule]</code> : Liste des règles de permission accordées pendant la session</li>
+                            <li><code>_tool_permissions: dict[str, ToolPermission]</code> : Dictionnaire des permissions globales par outil pour la session</li>
+                        </ul>
+                        <p><strong>Méthodes clés :</strong></p>
+                        <ul>
+                            <li><code>covers(tool_name: str, rp: RequiredPermission) -> bool</code> : Vérifie si une permission requise est couverte par une règle existante</li>
+                            <li><code>add_rule(rule: ApprovedRule)</code> : Ajoute une règle de permission</li>
+                            <li><code>set_tool_permission(tool_name: str, permission: ToolPermission)</code> : Définit la permission globale pour un outil</li>
+                            <li><code>reset()</code> : Efface toutes les permissions de session (appelée entre les sessions)</li>
+                        </ul>
+                    </div>
+
+                    <div class="card">
+                        <h3>📝 2. Permissions permanentes</h3>
+                        <p><strong>Stockage :</strong> Dans le fichier de configuration (<code>~/.vibe/config.toml</code> ou <code>.vibe/config.toml</code> du projet)</p>
+                        <p><strong>Format :</strong> TOML, dans la section <code>[tools.{nom_outil}]</code></p>
+                        <p><strong>Exemple :</strong></p>
+                        <pre><code class="language-toml">[tools.bash]
 permission = "ask"
 allowlist = ["git status", "ls"]
-denylist = ["rm -rf", "sudo"]
-</code></pre>
-                </li>
-                <li><strong>Persistance</strong> : Les permissions permanentes sont chargées au démarrage via <code>ConfigOrchestrator</code> et appliquées à <code>PermissionStore</code></li>
-            </ul>
-            <p><strong>Source</strong> : <code>vibe/core/tools/permissions.py:L16-56</code>, <code>vibe/core/config/vibe_schema.py:L414-420</code></p>
-        </section>
-    </main>
-
+denylist = ["rm -rf", "sudo"]</code></pre>
+                        <p><strong>Persistance :</strong> Les permissions permanentes sont chargées au démarrage via <code>ConfigOrchestrator</code> et appliquées à <code>PermissionStore</code></p>
+                        <p class="source-ref">Source : <code>vibe/core/tools/permissions.py:L16-56</code>, <code>vibe/core/config/vibe_schema.py:L414-420</code></p>
+                    </div>
+                </div>
+            </section>
         </main>
     </div>
 
@@ -209,21 +266,68 @@ denylist = ["rm -rf", "sudo"]
         <a href="02-deroulement-et-scenarios.html">Suivant : Déroulement et scénarios →</a>
     </div>
 
+    <!-- Modal pour plein écran -->
+    <div class="mermaid-modal" id="mermaidModal">
+        <div class="mermaid-modal-content">
+            <button class="mermaid-modal-close" onclick="closeFullscreenMermaid()">&times;</button>
+            <div id="mermaidModalContent"></div>
+        </div>
+    </div>
+
     <script>
+        // Configuration Mermaid avec startOnLoad: true pour simplifier
+        document.addEventListener('DOMContentLoaded', function() {
+            if (typeof mermaid !== 'undefined') {
+                mermaid.initialize({
+                    startOnLoad: true,
+                    securityLevel: 'loose',
+                    theme: window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'default'
+                });
+            }
+        });
+
         // Navigation mobile
         function toggleMobileNav() {
             const navLinks = document.getElementById('navLinks');
-            navLinks.classList.toggle('mobile-open');
+            if (navLinks) navLinks.classList.toggle('mobile-open');
         }
 
-        // Initialisation
-        document.addEventListener('DOMContentLoaded', function() {
-            // Initialisation Mermaid (au cas où)
-            mermaid.initialize({
-                startOnLoad: false,
-                securityLevel: 'loose',
-                theme: window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'default'
-            });
+        // Gestion du plein écran - corrigee
+        function openFullscreenMermaid(button) {
+            const container = button.closest('.mermaid-container');
+            const mermaidWrapper = container && container.querySelector('.mermaid-wrapper');
+            const modal = document.getElementById('mermaidModal');
+            const modalContent = document.getElementById('mermaidModalContent');
+            
+            if (mermaidWrapper && modal && modalContent && typeof mermaid !== 'undefined') {
+                // Cloner tout le wrapper
+                const clone = mermaidWrapper.cloneNode(true);
+                // Supprimer le bouton Agrandir du clone
+                const btn = clone.querySelector('.mermaid-fullscreen-btn');
+                if (btn) btn.remove();
+                modalContent.innerHTML = '';
+                modalContent.appendChild(clone);
+                modal.classList.add('active');
+                
+                // Re-initialiser Mermaid sur la modal
+                mermaid.initialize({
+                    startOnLoad: true,
+                    securityLevel: 'loose',
+                    theme: window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'default'
+                });
+            }
+        }
+
+        function closeFullscreenMermaid() {
+            const modal = document.getElementById('mermaidModal');
+            if (modal) modal.classList.remove('active');
+        }
+
+        // Fermer avec Échap
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeFullscreenMermaid();
+            }
         });
     </script>
 </body>

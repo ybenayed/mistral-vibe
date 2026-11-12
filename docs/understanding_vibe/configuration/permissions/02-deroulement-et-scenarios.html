@@ -55,19 +55,19 @@ flowchart TB
         SL[Session Log]
     end
 
-    UI -->|callback/respond| AS
-    AS -->|callback/call| UI
+    UI -->|callback respond| AS
+    AS -->|callback call| UI
     AS -->|valide| AL
     AL -->|_should_execute_tool| BT
     BT -->|resolve_permission| AL
-    AL -->|covers?| PS
-    PS -->|oui/non| AL
+    AL -->|covers| PS
+    PS -->|oui non| AL
     AL -->|_ask_approval| RB
     RB -->|ApprovalRequestEvent| AS
     AS -->|Ouverture callback| UI
-    UI -->|Approuve/Refuse| AS
-    AS -->|callback/result| AL
-    AL -->|résout Future| RB
+    UI -->|Approuve Refuse| AS
+    AS -->|callback result| AL
+    AL -->|resout Future| RB
     RB -->|ApprovalResolution| AL
     AL -->|ToolDecision| BT
     BT -->|run| BT
@@ -296,19 +296,19 @@ sequenceDiagram
     participant PS as PermissionStore
     participant T as Tool
 
-    U->>UI: Appuie sur Esc / "Deny"
+    U->>UI: Appuie sur Esc ou Deny
     UI->>UI: action_reject()
-    UI->>UI: post_message(ApprovalRejected)
-    UI->>AS: Callback response (DENY)
-    AS->>AL: callback/result
-    AL->>RB: resolve_approval(NO)
-    RB->>RB: Résout Future
-    RB->>AL: ApprovalResolution(NO)
-    AL->>AL: ToolDecision(SKIP)
+    UI->>UI: post_message ApprovalRejected
+    UI->>AS: Callback response DENY
+    AS->>AL: callback result
+    AL->>RB: resolve_approval NO
+    RB->>RB: Resout Future
+    RB->>AL: ApprovalResolution NO
+    AL->>AL: ToolDecision SKIP
     AL->>T: Abort
-    AL->>AL: stats.tool_calls_rejected++
-    AL->>AL: logger.info("denied...")
-    AL->>UI: ToolResultEvent(error)
+    AL->>AL: stats tool_calls_rejected plus plus
+    AL->>AL: logger info denied
+    AL->>UI: ToolResultEvent error
                         </pre>
                     </div>
                     <figcaption>
@@ -480,23 +480,32 @@ sequenceDiagram
         // Gestion du plein écran
         function openFullscreenMermaid(button) {
             const container = button.closest('.mermaid-container');
-            const mermaidElement = container.querySelector('.mermaid');
+            const mermaidWrapper = container && container.querySelector('.mermaid-wrapper');
             const modal = document.getElementById('mermaidModal');
             const modalContent = document.getElementById('mermaidModalContent');
             
-            modalContent.innerHTML = '<div class="mermaid">' + mermaidElement.textContent + '</div>';
-            modal.classList.add('active');
-            
-            mermaid.initialize({
-                startOnLoad: false,
-                securityLevel: 'loose',
-                theme: window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'default'
-            });
-            mermaid.init(undefined, modalContent.querySelector('.mermaid'));
+            if (mermaidWrapper && modal && modalContent && typeof mermaid !== 'undefined') {
+                // Cloner tout le wrapper
+                const clone = mermaidWrapper.cloneNode(true);
+                // Supprimer le bouton Agrandir du clone
+                const btn = clone.querySelector('.mermaid-fullscreen-btn');
+                if (btn) btn.remove();
+                modalContent.innerHTML = '';
+                modalContent.appendChild(clone);
+                modal.classList.add('active');
+                
+                // Re-initialiser Mermaid sur la modal
+                mermaid.initialize({
+                    startOnLoad: true,
+                    securityLevel: 'loose',
+                    theme: window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'default'
+                });
+            }
         }
 
         function closeFullscreenMermaid() {
-            document.getElementById('mermaidModal').classList.remove('active');
+            const modal = document.getElementById('mermaidModal');
+            if (modal) modal.classList.remove('active');
         }
 
         // Fermer avec Échap
